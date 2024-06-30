@@ -1,10 +1,13 @@
-from flask import Flask, render_template, Response, request, jsonify
+from flask import Flask, render_template, Response, request, redirect, url_for, send_from_directory
 import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 from datetime import datetime, timedelta
 import sqlite3
 from functools import wraps
+import os
+import random
+import string
 
 app = Flask(__name__)
 
@@ -90,6 +93,11 @@ def requires_auth(f):
     return decorated
 
 
+def generate_random_string(length=5):
+    letters = string.ascii_letters
+    return ''.join(random.choice(letters) for i in range(length))
+
+
 @app.route('/')
 @requires_auth
 def index():
@@ -122,9 +130,29 @@ def capture():
     success, frame = camera.read()
     if success:
         leaf_count = predict_leaf_count(frame)
-        date_str = datetime.now().strftime('%Y-%m-%d')
-        insert_data(date_str, leaf_count)
-    return "Image Captured and Data Saved!"
+        date_str = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        random_str = generate_random_string()
+        if not os.path.exists('saved_images'):
+            os.makedirs('saved_images')
+        filename = f'{date_str}_{random_str}.jpg'
+        file_path = os.path.join('saved_images', filename)
+        cv2.imwrite(file_path, frame)
+        insert_data(date_str.split('_')[0], leaf_count)
+
+    return render_template('capture_result.html', filename=filename, leaf_count=leaf_count)
+
+
+@app.route('/view_images')
+@requires_auth
+def view_images():
+    images = os.listdir('saved_images')
+    return render_template('view_images.html', images=images)
+
+
+@app.route('/saved_images/<filename>')
+@requires_auth
+def display_image(filename):
+    return send_from_directory('saved_images', filename)
 
 
 @app.route('/compare')
