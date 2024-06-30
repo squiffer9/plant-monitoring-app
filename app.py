@@ -116,7 +116,7 @@ def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-@app.route('/capture')
+@app.route('/capture', methods=['POST'])
 @requires_auth
 def capture():
     success, frame = camera.read()
