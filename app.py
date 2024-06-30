@@ -1,9 +1,10 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, request, jsonify
 import cv2
 import numpy as np
 from tensorflow.keras.models import load_model
 from datetime import datetime, timedelta
 import sqlite3
+from functools import wraps
 
 app = Flask(__name__)
 
@@ -65,12 +66,38 @@ def compare_growth():
     return growth_yesterday, growth_last_week
 
 
+def check_auth(username, password):
+    """認証情報を確認"""
+    return username == 'admin' and password == 'password'
+
+
+def authenticate():
+    """認証要求"""
+    return Response(
+        'Could not verify your access level for that URL.\n'
+        'You have to login with proper credentials', 401,
+        {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+
+    return decorated
+
+
 @app.route('/')
+@requires_auth
 def index():
     return render_template('index.html')
 
 
 @app.route('/video_feed')
+@requires_auth
 def video_feed():
     def gen_frames():
         while True:
@@ -90,6 +117,7 @@ def video_feed():
 
 
 @app.route('/capture')
+@requires_auth
 def capture():
     success, frame = camera.read()
     if success:
@@ -100,6 +128,7 @@ def capture():
 
 
 @app.route('/compare')
+@requires_auth
 def compare():
     growth_yesterday, growth_last_week = compare_growth()
     return render_template('compare.html', growth_yesterday=growth_yesterday, growth_last_week=growth_last_week)
