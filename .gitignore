@@ -21,5 +21,8 @@ data/
 # macOS
 .DS_Store
 
+# PyCharm
+.idea
+
 # Model files
 model/mobilenetv2_model.h5
