@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Growth Monitoring</title>
+</head>
+<body>
+    <h1>Plant Growth Monitoring</h1>
+    <img src="{{ url_for('video_feed') }}" width="640" height="480">
+    <form action="/capture" method="post">
+        <button type="submit">Capture Image</button>
+    </form>
+    <a href="{{ url_for('compare') }}">Compare Growth</a>
+</body>
+</html>
